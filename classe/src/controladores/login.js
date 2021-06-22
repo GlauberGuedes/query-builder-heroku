@@ -1,4 +1,4 @@
-const conexao = require('../conexao');
+const knex = require('../conexao');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const senhaHash = require('../senhaHash');
@@ -11,13 +11,19 @@ const login = async (req, res) => {
     }
 
     try {
-        const { rowCount, rows } = await conexao.query('select * from usuarios where email = $1', [email]);
+        const usuario = await knex('usuarios').where({ email }).first().debug();
 
-        if (rowCount === 0) {
+        if(!usuario) {
             return res.status(400).json("O usuario não foi encontrado");
         }
 
-        const usuario = rows[0];
+        // const { rowCount, rows } = await conexao.query('select * from usuarios where email = $1', [email]);
+
+        // if (rowCount === 0) {
+        //     return res.status(400).json("O usuario não foi encontrado");
+        // }
+
+        // const usuario = rows[0];
 
         const senhaCorreta = await bcrypt.compare(senha, usuario.senha);
 
@@ -27,7 +33,7 @@ const login = async (req, res) => {
 
         const token = jwt.sign({ id: usuario.id }, senhaHash, { expiresIn: '8h' });
 
-        const { senha: _, ...dadosUsuario } = usuario;
+         const { senha: _, ...dadosUsuario } = usuario;
 
         return res.status(200).json({
             usuario: dadosUsuario,
